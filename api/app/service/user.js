@@ -1,12 +1,15 @@
 "use strict";
 const Service = require("egg").Service;
 const utils = require("../extend/tool");
+const jwt = require('jsonwebtoken');
+// var token = jwt.sign({ foo: 'bar' }, 'shhhhh');  // 生成token
+// var decoded = jwt.verify(token, 'shhhhh'); // 解码token
+
 class UserService extends Service {
   // 查询用户列表
   async queryUserList() {
     return this.ctx.model.User.find({}, { _id: 0 })
       .then(res => {
-        console.log(res);
         return { success: true, msg: "", code: 0, data: res };
       })
       .catch(err => {
@@ -27,7 +30,7 @@ class UserService extends Service {
 
   // 用户登录
   async login(param) {
-    console.log('-----get params-----',param)
+    console.log('-----login params-----',param)
     if(!param.authType){
       param.authType="phone";
     }
@@ -36,30 +39,88 @@ class UserService extends Service {
     //   account:param.account,
     //   password:param.password
     // };
-    return this.ctx.model.Auths.find(param,{_id:0})
+    return this.ctx.model.Auths.find(param,{_id:0,password:0})
       .then(res => {
-        console.log('------res--------',res);
-        if (res[0] && res[0].statusId==1) {
-          this._updataAuthStatus(res[0].authId,true); //更新用户状态
-          //查询用户基本信息
-          return this._queryUserById(res[0].userId).then(_queryUserByIdRes=>{
-            console.log("_queryUserByIdRes:",_queryUserByIdRes);
-            let resData = {
-              mainInfo:{},
-              authInfo:res[0]
-            };
-            if(_queryUserByIdRes.success){
-              resData.mainInfo=_queryUserByIdRes.data;
-              return { success: true, msg:"登录成功", data:resData};
-            }
+        console.log('model.Auths.find-----------:\n',res+"\n");
+        if (res[0] && res[0].statusId==1) { // Auths中查到记录
+          // this._updataAuthStatus(res[0].authId,true); //更新用户状态
+         return this._updataToken(res[0])
+               .then(token=>{
+                  //查询用户基本信息
+                return this._queryUserById(res[0].userId)
+                      .then(_queryUserByIdRes=>{
+                          console.log("_queryUserByIdRes:",_queryUserByIdRes);
+                          res[0].token=token;
+                          let resData = {
+                            mainInfo:{},
+                            authInfo:res[0]
+                          };
+                          if(_queryUserByIdRes.success){
+                            resData.mainInfo=_queryUserByIdRes.data;
+                            return { success: true, msg:"登录成功", data:resData};
+                          }
+                        })
           })
-         }else{
+         }else{ // 查不到记录
           return { success: false, msg:"用户名或密码错误", err: err };
-         }
+         } 
       })
       .catch(err => {
         return { success: false, msg:"用户名或密码错误", err: err };
       });
+  }
+
+  /**
+   * 更新login表中的token信息
+   * 查询表如果有数据就更新，没有就添加记录
+   * @param {*} authObj 
+   */
+  async _updataToken(authObj) {
+    let token = jwt.sign({authObjStr: JSON.stringify(authObj)}, 'shhhhh'); // 生成token
+    const findLoginInfo = await this.ctx.model.Login.find({authId: authObj.authId }, {_id: 0 });
+    console.log("model.Login.find-------------------------:\n"+findLoginInfo+"\n");
+    if (findLoginInfo && findLoginInfo.length < 1) {
+      // 添加记录
+      return await this.insertLogin(authObj, token);
+    } else {
+      // 更新记录
+      return await this.updateLogin(authObj, token);
+    }
+  }
+  /**
+   * 插入登录信息
+   * @param {*} authObj 
+   * @param {*} token 
+   */
+  async insertLogin(authObj, token) {
+    return await this.ctx.model.Login.create({
+      userId: authObj.userId,
+      authId: authObj.authId,
+      token: token,
+      loginTime: (new Date().getTime()).toString()
+    }).then(res => {
+      console.log("model.Login.create---------:\n",res+"\n");
+      return token;
+    })
+  }
+
+  /**
+   * 更新登录信息
+   * @param {*} authObj 
+   * @param {*} token 
+   */
+  async updateLogin(authObj, token) {
+    return await this.ctx.model.Login.update({
+      authId: authObj.authId
+    }, {
+      $set: {
+        token: token,
+        loginTime: (new Date().getTime()).toString()
+      }
+    }).then(res => {
+      console.log("model.Login.update---------:\n",res+"\n");
+      return token;
+    })
   }
 
   //更新用户登录状态

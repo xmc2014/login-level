@@ -55,7 +55,11 @@ cnpm i moment -S
 cnpm i string-random -S
 ```
 
-
+##添加token插件
+```
+#[jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
+cnpm i jsonwebtoken -S
+```
 ##登录设计流程
 ```
 #查询根据密码账号或者第三方授权登录（只需查询account字段）查询表p_auths

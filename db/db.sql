@@ -36,8 +36,7 @@ db.p_auths.insert([
         roleId:1,
         statusId:1, // 状态Id
         createTime:new Date().getTime(),
-        token:"",
-        isLogin:false
+        token:""
     },
     {
         authId:"2",
@@ -48,8 +47,7 @@ db.p_auths.insert([
         roleId:1,
         statusId:1, // 状态Id
         createTime:new Date().getTime(),
-        token:"",
-        isLogin:false
+        token:""
     },
     {
         authId:"3",
@@ -60,8 +58,7 @@ db.p_auths.insert([
         roleId:1,
         statusId:1, // 状态Id
         createTime:new Date().getTime(),
-        token:"",
-        isLogin:false
+        token:""
     }
 ]);
 

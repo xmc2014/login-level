@@ -11,8 +11,7 @@ module.exports = app =>{
         roleId:{type : Number,unique:true,required:true},
         statusId:{type:Number,required:true}, // 状态Id
         createTime:{type:String},
-        token:{type:String},
-        isLogin:{type:Boolean,required:true}
+        token:{type:String}
     });
 
     return mongoose.model("Auths",AuthsSchema, 'p_auths');
