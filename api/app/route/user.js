@@ -1,6 +1,8 @@
 module.exports = app => {
   // 查询所有用户信息
   app.router.get('/api/v1/getUserList', app.controller.user.list);
+  //根据用户UserId查询用户基本信息
+  app.router.get('/api/v1/getUserInfoById', app.controller.user.getUserInfoById);
   // 用户登录
   app.router.post('/api/v1/login', app.controller.user.login);
   

@@ -16,6 +16,47 @@ class UserService extends Service {
         return { success: false, err: err };
       });
   }
+
+  /**
+   * 根据userId查询用户基本信息，要登录才能查询
+   * @param {*} param 
+   */
+  async getUserInfoById(param){
+    if(!param || !param.userId || !param.token){
+      return { success: false, err:"查询用户基本信息失败,参数不完整"};
+    }
+    const checkTokenObj =  await this._isAuthToken(param.token);
+    if(!checkTokenObj.success){
+      return checkTokenObj;
+    }else{ //查询用户信息
+      return await this._queryUserById(param.userId);
+    }
+  }
+
+  /**
+   * 验证token是否失效
+   */
+  async _isAuthToken(token){
+    return  this.ctx.model.Login.find({token:token}, { _id: 0 })
+              .then(res=>{
+                console.log("----isAuthToken-----model.Login.find-----:\n"+res+"\n");
+                if(res.length==0){
+                  return { success:false, err:"无效的token"}
+                }else if(new Date().getTime()-res[0].loginTime>(30*60*1000)){ //超过30分钟token失效
+                  return { success:false, err:"token失效，请重新获取"}
+                }else{ //token可用，并更新token的失效时间
+                  this.ctx.model.Login.update({ token: token }, { $set: { loginTime: new Date().getTime().toString() } }).then(res=>{
+                    console.log("更新token的失效时间:\n",res);
+                  })
+                  return { success:true, data:token };
+                }
+              })
+              .catch(err=>{
+                return { success:false, err:err}
+              })
+
+  }
+
   // 根据用户id查询用户基本信息
   async _queryUserById(userId){
     console.log("{userId:userId}:",{userId:userId});
@@ -81,10 +122,10 @@ class UserService extends Service {
     console.log("model.Login.find-------------------------:\n"+findLoginInfo+"\n");
     if (findLoginInfo && findLoginInfo.length < 1) {
       // 添加记录
-      return await this.insertLogin(authObj, token);
+      return await this._insertLogin(authObj, token);
     } else {
       // 更新记录
-      return await this.updateLogin(authObj, token);
+      return await this._updateLogin(authObj, token);
     }
   }
   /**
@@ -92,7 +133,7 @@ class UserService extends Service {
    * @param {*} authObj 
    * @param {*} token 
    */
-  async insertLogin(authObj, token) {
+  async _insertLogin(authObj, token) {
     return await this.ctx.model.Login.create({
       userId: authObj.userId,
       authId: authObj.authId,
@@ -109,7 +150,7 @@ class UserService extends Service {
    * @param {*} authObj 
    * @param {*} token 
    */
-  async updateLogin(authObj, token) {
+  async _updateLogin(authObj, token) {
     return await this.ctx.model.Login.update({
       authId: authObj.authId
     }, {

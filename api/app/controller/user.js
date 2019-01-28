@@ -11,6 +11,13 @@ class UserController extends Controller {
     ctx.body = userList;
   }
 
+  async getUserInfoById(){
+    const { ctx } = this;
+    console.log('===========请求参数=============',ctx.query);
+    let userList = await ctx.service.user.getUserInfoById(ctx.query);
+    ctx.body = userList;
+  }
+
   async login(){
     const {ctx} = this;
     console.log('===========请求参数=============',ctx.request.body);
