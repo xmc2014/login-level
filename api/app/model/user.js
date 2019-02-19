@@ -4,7 +4,7 @@ module.exports = app => {
  
   // 定义了表数据的类型
   const UserSchema = new Schema({
-    authId:{type:String,unique:true,required:true},
+    userId:{type:String,unique:true,required:true},
     nickName: {type: String,required:true },
     sex:{type:String,required:true},
     headImg: {type: String }
